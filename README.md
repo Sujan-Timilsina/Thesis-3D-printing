@@ -4,12 +4,12 @@ A comprehensive AI-powered 3D printing platform featuring automatic model genera
 
 ## Features
 
-### 🏠 Homepage
+### Homepage
 - Service overview and selection
 - Professional landing page design
 - Easy navigation to services
 
-### 🎨 AI 3D Model Generation
+### AI 3D Model Generation
 - AI-powered 3D model generation from text descriptions
 - Multi-image upload support for reference
 - Interactive 3D preview with Plotly
@@ -17,7 +17,7 @@ A comprehensive AI-powered 3D printing platform featuring automatic model genera
 - STL export for 3D printing
 - Python/trimesh code generation
 
-### 🖨️ Professional Print Service
+### Professional Print Service
 - STL file upload
 - AI-powered material recommendation based on use case
 - Automatic Bambu Studio CLI configuration
@@ -159,7 +159,7 @@ Output:
   PENDING ORDERS (3 total)
 ================================================================================
 
-📦 Order #123456
+ Order #123456
    Location: orders/order_123456
    Timestamp: 2025-11-10 14:30:22
    STL File: robot_arm.stl
@@ -167,7 +167,7 @@ Output:
    Material: PLA
    Cost: $15.50
 
-   🔧 To process this order:
+    To process this order:
       python print_operator_cli.py --stl-file "orders/order_123456/robot_arm.stl" --order-file "orders/order_123456/order_123456_summary.txt"
 ```
 
@@ -203,16 +203,16 @@ python print_operator_cli.py --check-cli
 
 #### Example Output:
 ```
-📄 Reading order file: order_123456_summary.txt
+Reading order file: order_123456_summary.txt
 ✓ Order ID: 123456
 ✓ Material: PLA
 ✓ Layer Height: 0.2mm
 ✓ Infill: 20%
 
-🔧 Slicing command:
+Slicing command:
    bambu-cli slice model.stl -o model_sliced.3mf --filament-type PLA --layer-height 0.2 --infill-density 20%
 
-⏳ Starting slicing process...
+Starting slicing process...
 ✓ SUCCESS! Model sliced successfully
 ✓ Output saved to: model_sliced.3mf
 ✓ File size: 2,456,789 bytes
