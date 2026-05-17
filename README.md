@@ -32,11 +32,13 @@ A comprehensive AI-powered 3D printing platform featuring automatic model genera
 pip install -r requirements.txt
 ```
 
-### 2. Configure API Key
-Create a `.env` file with your OpenAI API key:
+### 2. Configure API Keys
+Create a `.env` file with the keys for whichever provider(s) you want to use:
 ```
-OPENAI_API_KEY=your_api_key_here
+OPENAI_API_KEY=your_openai_api_key_here
+GEMINI_API_KEY=your_gemini_api_key_here
 ```
+The AI generation page lets you switch between providers at runtime. At least one key must be set.
 
 ### 3. Run the Application
 ```bash
@@ -53,7 +55,7 @@ Thesis-3D-printing/
 ├── pages/
 │   ├── 1_AI_3D_Generation.py       # AI model generation service
 │   └── 2_Print_With_Us.py          # Professional printing service
-├── api_handler_simple.py            # OpenAI API integration
+├── api_handler_simple.py            # OpenAI + Gemini API integration
 ├── print_operator_cli.py            # CLI tool for processing orders (for you)
 ├── orders/                          # Auto-generated order storage
 │   └── order_XXXXXX/               # Each order gets its own directory
@@ -82,7 +84,9 @@ Thesis-3D-printing/
 ## Technologies
 
 - **Frontend**: Streamlit
-- **AI**: OpenAI GPT-4o-mini / GPT-5-mini
+- **AI**: OpenAI GPT-5-mini / GPT-4o-mini (via Responses API with fallback to Chat Completions) and Google Gemini 3.1 Pro (via `google-genai` with fallback to `google-generativeai`)
+- **CAD**: CadQuery (parametric, phase-driven code generation)
+- **RAG**: Local retrieval over Bambu filament datasheets for material recommendations
 - **3D Processing**: trimesh, numpy
 - **Visualization**: Plotly
 - **Slicing**: Bambu Studio CLI (configured automatically)
@@ -106,7 +110,7 @@ Thesis-3D-printing/
 ## Requirements
 
 - Python 3.8+
-- OpenAI API key (for AI features)
+- An OpenAI API key and/or a Google Gemini API key (at least one is required for AI features; the UI lets you pick which provider to use)
 - Bambu Studio CLI (for actual slicing, optional for demo)
 
 ## Bambu Studio CLI Integration
@@ -301,7 +305,7 @@ bambu-cli slice input.stl -o output.3mf \
 ## Notes
 
 - The AI generation service works in demo mode without an API key
-- The print service provides AI recommendations when API is configured
+- The print service provides AI recommendations when an OpenAI or Gemini API key is configured
 - STL files can be transferred seamlessly between services
 - All generated models are automatically optimized for 3D printing
 - Bambu Studio CLI integration supports both real slicing and simulation
