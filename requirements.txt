@@ -1,0 +1,21 @@
+# Minimal requirements for the 3D printing app
+streamlit>=1.28.0
+openai
+google-generativeai
+google-genai
+python-dotenv
+
+# RAG engine
+faiss-cpu
+pypdf
+
+# Python 3D modeling libraries
+cadquery
+trimesh
+numpy
+numpy-stl
+matplotlib
+Pillow
+plotly
+shapely
+mapbox-earcut
