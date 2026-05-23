@@ -1,5 +1,15 @@
 # Print With Us - Professional 3D Printing Service
 import streamlit as st
+
+# Self-healing: force PagesManager to rescan pages/ on every rerun.
+# Without this, adding a new page while Streamlit is running stays invisible
+# until the process is fully killed (in-memory page cache is stale).
+try:
+    from streamlit.source_util import invalidate_pages_cache as _invalidate_pages_cache
+    _invalidate_pages_cache()
+except Exception:
+    pass
+
 import time
 import os
 import tempfile
@@ -14,27 +24,37 @@ from styles import inject_global_styles
 # Page config
 st.set_page_config(
     page_title="Print With Us",
-    layout="wide"
+    layout="wide",
+    initial_sidebar_state="collapsed",
 )
 
 require_login()
 inject_global_styles()
 
-# CSS — shared palette (matches Home.py and page 1)
+# CSS — dark theme matching Home.py
 st.markdown("""
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
+    /* ===== Dark theme — matches Home.py ===== */
+    html, body, [class*="stApp"], .main, .stApp {
+        background-color: #0a0a0a !important;
+        color: #ffffff !important;
+    }
     *, html, body, [class*="css"] {
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
     }
 
     .block-container {
-        padding-top: 1rem !important;
-        padding-left: 2.5rem !important;
-        padding-right: 2.5rem !important;
+        padding-top: 0 !important;
+        padding-left: 1.5rem !important;
+        padding-right: 1.5rem !important;
+        max-width: 1280px !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
     }
+    div[data-testid="stMarkdown"] { width: 100%; }
 
-    /* Hide sidebar and all toggle buttons */
+    /* Hide sidebar */
     [data-testid="stSidebar"],
     [data-testid="stSidebarCollapsedControl"],
     [data-testid="collapsedControl"],
@@ -55,24 +75,126 @@ st.markdown("""
         z-index: -1 !important;
     }
 
+    /* Hide Streamlit's auto-generated heading anchor link icons */
+    [data-testid="stHeaderActionElements"],
+    .stMarkdown a.anchor-link,
+    .streamlit-anchor-link,
+    .stMarkdown h1 > a[href^="#"],
+    .stMarkdown h2 > a[href^="#"],
+    .stMarkdown h3 > a[href^="#"] {
+        display: none !important;
+    }
+
+    /* Header / nav (same as Home) */
+    .nav-brand {
+        font-size: 1.1rem;
+        font-weight: 800;
+        letter-spacing: -0.015em;
+        color: #ffffff;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        height: 42px;
+        line-height: 1;
+    }
+    .nav-brand:hover { opacity: 0.85; }
+    .nav-brand .accent {
+        background: linear-gradient(135deg, #47a3f3, #1e88e4);
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    /* Streamlit buttons — match Home */
+    .stButton > button, .stDownloadButton > button {
+        border-radius: 14px !important;
+        padding: 0.7rem 1.2rem !important;
+        font-weight: 600 !important;
+        font-size: 0.92rem !important;
+        background: #171717 !important;
+        color: #ffffff !important;
+        border: 1px solid #262626 !important;
+        transition: transform 0.2s, background 0.2s, border-color 0.2s, box-shadow 0.2s !important;
+    }
+    .stButton > button:hover, .stDownloadButton > button:hover {
+        background: #262626 !important;
+        border-color: #404040 !important;
+        transform: translateY(-1px) !important;
+        box-shadow: 0 8px 18px -10px rgba(0,0,0,0.6) !important;
+        color: #ffffff !important;
+    }
+    .stButton > button[kind="primary"], .stDownloadButton > button[kind="primary"] {
+        background: linear-gradient(135deg, #1e88e4, #0d47a1) !important;
+        border: 1px solid #1976d2 !important;
+        color: #ffffff !important;
+    }
+    .stButton > button[kind="primary"]:hover, .stDownloadButton > button[kind="primary"]:hover {
+        background: linear-gradient(135deg, #47a3f3, #1565c0) !important;
+        box-shadow: 0 14px 28px -10px rgba(30,136,228,0.5) !important;
+    }
+
+    /* Headings + body on dark bg */
+    h1, h2, h3, h4 { color: #ffffff !important; letter-spacing: -0.015em; }
+    p, li { color: #d4d4d4; }
+    [data-testid="stCaptionContainer"], .stCaption { color: #737373 !important; }
+    strong { color: #ffffff; }
+
+    /* Form controls — dark surfaces */
+    div[data-baseweb="select"] > div,
+    .stTextInput input,
+    .stNumberInput input,
+    div[data-testid="stTextArea"] textarea {
+        background: #171717 !important;
+        color: #ffffff !important;
+        border-color: #262626 !important;
+        border-radius: 12px !important;
+    }
+    div[data-testid="stTextArea"] textarea:focus,
+    .stTextInput input:focus,
+    .stNumberInput input:focus {
+        border-color: #1e88e4 !important;
+        box-shadow: 0 0 0 3px rgba(30,136,228,0.15) !important;
+    }
+    [data-testid="stFileUploader"] section {
+        background: #171717 !important;
+        border: 1px dashed #404040 !important;
+        border-radius: 14px !important;
+    }
+    [data-testid="stExpander"] {
+        background: #171717 !important;
+        border: 1px solid #262626 !important;
+        border-radius: 16px !important;
+    }
+    [data-testid="stExpander"] summary { color: #ffffff !important; }
+    [data-testid="stMetric"] {
+        background: #171717 !important;
+        border: 1px solid #262626 !important;
+        border-radius: 14px !important;
+        padding: 0.85rem 1rem !important;
+    }
+    [data-testid="stMetricLabel"] { color: #a3a3a3 !important; }
+    [data-testid="stMetricValue"] { color: #ffffff !important; }
+    hr { border: none !important; border-top: 1px solid #262626 !important; }
+
+    /* Page-specific titles — keep centered, switch to white */
     .page-title {
-        font-size: clamp(1.5rem, 3vw, 2rem);
-        font-weight: 700;
-        color: #0F172A;
+        font-size: clamp(1.8rem, 3.5vw, 2.4rem);
+        font-weight: 800;
+        color: #ffffff !important;
         text-align: center;
         letter-spacing: -0.02em;
-        margin: 1.25rem 0 0.5rem 0;
+        margin: 1.5rem 0 0.5rem 0;
     }
     .section-title {
         font-size: 1.2rem;
-        font-weight: 600;
-        color: #0F172A;
+        font-weight: 700;
+        color: #ffffff !important;
         text-align: center;
         margin: 1.25rem 0 0.75rem 0;
         letter-spacing: -0.01em;
     }
 
-    /* === Modern step indicator === */
+    /* === Step indicator (dark themed) === */
     .step-progress {
         display: flex;
         align-items: center;
@@ -88,66 +210,70 @@ st.markdown("""
         padding: 0.3rem 0.6rem;
     }
     .step-circle {
-        width: 30px;
-        height: 30px;
+        width: 32px;
+        height: 32px;
         border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-weight: 600;
+        font-weight: 700;
         font-size: 0.85rem;
         border: 2px solid;
         flex-shrink: 0;
         transition: all 0.2s;
     }
     .step-item.done .step-circle {
-        background: #3B82F6;
+        background: linear-gradient(135deg, #1e88e4, #0d47a1);
         color: #FFFFFF;
-        border-color: #3B82F6;
+        border-color: #1e88e4;
     }
     .step-item.active .step-circle {
-        background: #FFFFFF;
-        color: #2563EB;
-        border-color: #2563EB;
-        box-shadow: 0 0 0 4px rgba(59,130,246,0.12);
+        background: #0a0a0a;
+        color: #47a3f3;
+        border-color: #47a3f3;
+        box-shadow: 0 0 0 4px rgba(71,163,243,0.15);
     }
     .step-item.upcoming .step-circle {
-        background: #FFFFFF;
-        color: #94A3B8;
-        border-color: rgba(15,23,42,0.15);
+        background: #171717;
+        color: #737373;
+        border-color: #262626;
     }
     .step-label {
-        font-size: 0.9rem;
+        font-size: 0.92rem;
         font-weight: 500;
     }
-    .step-item.done .step-label { color: #3B82F6; }
-    .step-item.active .step-label { color: #0F172A; font-weight: 600; }
-    .step-item.upcoming .step-label { color: #94A3B8; }
+    .step-item.done .step-label { color: #47a3f3; }
+    .step-item.active .step-label { color: #ffffff; font-weight: 700; }
+    .step-item.upcoming .step-label { color: #737373; }
     .step-connector {
         width: 56px;
         height: 2px;
-        background: rgba(15,23,42,0.1);
+        background: #262626;
         margin: 0 0.25rem;
     }
     .step-connector.done {
-        background: #3B82F6;
+        background: #1e88e4;
     }
 </style>
 """, unsafe_allow_html=True)
 
-# Horizontal navigation menu
-col_nav1, col_nav2, col_nav3 = st.columns(3)
-with col_nav1:
-    if st.button("Home", use_container_width=True):
-        st.switch_page("Home.py")
-with col_nav2:
-    if st.button("AI 3D Generation", use_container_width=True):
+# Header navigation (matches Home)
+nav_brand, _nav_gap, nav_a, nav_b, nav_c = st.columns([0.40, 0.04, 0.18, 0.18, 0.20])
+with nav_brand:
+    st.markdown(
+        '<a href="/" target="_self" class="nav-brand">3D Print<span class="accent">.AI</span></a>',
+        unsafe_allow_html=True,
+    )
+with nav_a:
+    if st.button("Start Generating", use_container_width=True, key="header_gen"):
         st.switch_page("pages/1_AI_3D_Generation.py")
-with col_nav3:
-    if st.button("Print With Us", use_container_width=True, type="primary"):
+with nav_b:
+    if st.button("Get a Quote", type="primary", use_container_width=True, key="header_quote"):
         st.switch_page("pages/2_Print_With_Us.py")
-
-st.divider()
+with nav_c:
+    if st.button("Pricing", use_container_width=True, key="header_pricing"):
+        st.switch_page("pages/3_Pricing.py")
+st.markdown('<div style="border-bottom:1px solid #1f1f1f; margin: 0.25rem 0 0.5rem 0;"></div>', unsafe_allow_html=True)
 
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -268,7 +394,7 @@ def build_bambu_config_json(recommendations, input_path, output_path):
 
 # ============================================
 
-st.title("Professional 3D Printing Service")
+st.title("3D Printing Service")
 st.write("Upload your STL file and let AI recommend optimal materials and print settings")
 
 # Initialize session state

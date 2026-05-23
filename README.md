@@ -47,14 +47,27 @@ streamlit run Home.py
 
 The app will open in your browser at `http://localhost:8501`
 
+### 4. Log In
+
+Every page is gated by a login screen. Use the following demo credentials:
+
+| Field | Value |
+| --- | --- |
+| **Username** | `tester` |
+| **Password** | `Test123.` |
+
+Sessions persist while the browser tab is open and reset when it is closed. The credentials are defined in [`auth.py`](auth.py) — change `_USERNAME` and `_PASSWORD_HASH` (a SHA-256 hash of the new password) before deploying anywhere public.
+
 ## Project Structure
 
 ```
 Thesis-3D-printing/
 ├── Home.py                          # Homepage and entry point
+├── auth.py                          # Login gate (username / SHA-256 password)
 ├── pages/
 │   ├── 1_AI_3D_Generation.py       # AI model generation service
-│   └── 2_Print_With_Us.py          # Professional printing service
+│   ├── 2_Print_With_Us.py          # 3D printing service
+│   └── 3_Pricing.py                # Pricing page (coming soon)
 ├── api_handler_simple.py            # OpenAI + Gemini API integration
 ├── print_operator_cli.py            # CLI tool for processing orders (for you)
 ├── orders/                          # Auto-generated order storage

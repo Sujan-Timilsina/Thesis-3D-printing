@@ -2,6 +2,16 @@
 # Conversational phase-based 3D modeling with chat left, preview right
 
 import streamlit as st
+
+# Self-healing: force PagesManager to rescan pages/ on every rerun.
+# Without this, adding a new page while Streamlit is running stays invisible
+# until the process is fully killed (in-memory page cache is stale).
+try:
+    from streamlit.source_util import invalidate_pages_cache as _invalidate_pages_cache
+    _invalidate_pages_cache()
+except Exception:
+    pass
+
 import time
 import random
 import os
@@ -27,27 +37,122 @@ inject_global_styles()
 
 # -- CSS --
 st.markdown("""
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded" rel="stylesheet">
 <style>
-    /*
-     * Shared palette (matches Home.py)
-     * --slate-800: #1E293B   surface
-     * --slate-400: #94A3B8   muted text
-     * --slate-50:  #F8FAFC   primary text
-     * --blue-500:  #3B82F6   primary accent
-     * --indigo-500:#6366F1   secondary accent (active step)
-     */
-
+    /* ===== Dark theme — matches Home.py ===== */
+    html, body, [class*="stApp"], .main, .stApp {
+        background-color: #0a0a0a !important;
+        color: #ffffff !important;
+    }
     *, html, body, [class*="css"] {
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
     }
 
     .block-container {
-        padding-top: 1rem !important;
-        padding-left: 2.5rem !important;
-        padding-right: 2.5rem !important;
+        padding-top: 0 !important;
+        padding-left: 1.5rem !important;
+        padding-right: 1.5rem !important;
+        max-width: 1400px !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
     }
+    div[data-testid="stMarkdown"] { width: 100%; }
+
+    /* Hide Streamlit's auto-generated heading anchor link icons */
+    [data-testid="stHeaderActionElements"],
+    .stMarkdown a.anchor-link,
+    .streamlit-anchor-link,
+    .stMarkdown h1 > a[href^="#"],
+    .stMarkdown h2 > a[href^="#"],
+    .stMarkdown h3 > a[href^="#"] {
+        display: none !important;
+    }
+
+    /* Header / nav (same as Home) */
+    .nav-brand {
+        font-size: 1.1rem;
+        font-weight: 800;
+        letter-spacing: -0.015em;
+        color: #ffffff;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        height: 42px;
+        line-height: 1;
+    }
+    .nav-brand:hover { opacity: 0.85; }
+    .nav-brand .accent {
+        background: linear-gradient(135deg, #47a3f3, #1e88e4);
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    /* Streamlit buttons — match Home */
+    .stButton > button {
+        border-radius: 14px !important;
+        padding: 0.65rem 1.1rem !important;
+        font-weight: 600 !important;
+        font-size: 0.92rem !important;
+        background: #171717 !important;
+        color: #ffffff !important;
+        border: 1px solid #262626 !important;
+        transition: transform 0.2s, background 0.2s, border-color 0.2s, box-shadow 0.2s !important;
+    }
+    .stButton > button:hover {
+        background: #262626 !important;
+        border-color: #404040 !important;
+        transform: translateY(-1px) !important;
+        box-shadow: 0 8px 18px -10px rgba(0,0,0,0.6) !important;
+        color: #ffffff !important;
+    }
+    .stButton > button[kind="primary"] {
+        background: linear-gradient(135deg, #1e88e4, #0d47a1) !important;
+        border: 1px solid #1976d2 !important;
+        color: #ffffff !important;
+    }
+    .stButton > button[kind="primary"]:hover {
+        background: linear-gradient(135deg, #47a3f3, #1565c0) !important;
+        box-shadow: 0 14px 28px -10px rgba(30,136,228,0.5) !important;
+    }
+
+    /* Headings + body on dark bg */
+    h1, h2, h3, h4 { color: #ffffff !important; letter-spacing: -0.015em; }
+    p, li { color: #d4d4d4; }
+    [data-testid="stCaptionContainer"], .stCaption { color: #737373 !important; }
+    .stMarkdown a:not(.nav-brand) { color: #47a3f3; }
+
+    /* Form controls — dark surfaces */
+    div[data-baseweb="select"] > div,
+    .stTextInput input,
+    .stNumberInput input,
+    div[data-testid="stTextArea"] textarea {
+        background: #171717 !important;
+        color: #ffffff !important;
+        border-color: #262626 !important;
+        border-radius: 12px !important;
+    }
+    div[data-testid="stTextArea"] textarea:focus,
+    .stTextInput input:focus,
+    .stNumberInput input:focus {
+        border-color: #1e88e4 !important;
+        box-shadow: 0 0 0 3px rgba(30,136,228,0.15) !important;
+    }
+    [data-testid="stExpander"] {
+        background: #171717 !important;
+        border: 1px solid #262626 !important;
+        border-radius: 16px !important;
+    }
+    [data-testid="stExpander"] summary { color: #ffffff !important; }
+    [data-testid="stMetric"] {
+        background: #171717 !important;
+        border: 1px solid #262626 !important;
+        border-radius: 14px !important;
+    }
+    [data-testid="stMetricLabel"] { color: #a3a3a3 !important; }
+    [data-testid="stMetricValue"] { color: #ffffff !important; }
+    hr { border: none !important; border-top: 1px solid #262626 !important; }
 
     /* Force columns and their content to stay top-aligned. Streamlit's
        default flex behavior can vertically center the shorter column's
@@ -331,25 +436,116 @@ st.markdown("""
         margin: 0 !important;
         border-radius: 8px !important;
     }
+
+    /* === Robust alignment fix for browse + send buttons === */
+    /* Use [data-testid] without div/section prefix so it matches whichever
+       element type Streamlit actually emits (changed between versions). */
+    [data-testid="stHorizontalBlock"]:has([data-testid="stFileUploader"]) {
+        display: flex !important;
+        align-items: center !important;
+        min-height: 52px !important;
+        padding: 6px 16px !important;
+        gap: 0.5rem !important;
+    }
+    [data-testid="stHorizontalBlock"]:has([data-testid="stFileUploader"]) > [data-testid="stColumn"],
+    [data-testid="stHorizontalBlock"]:has([data-testid="stFileUploader"]) > [data-testid="column"] {
+        display: flex !important;
+        align-items: center !important;
+        align-self: center !important;
+        min-height: 0 !important;
+    }
+    [data-testid="stHorizontalBlock"]:has([data-testid="stFileUploader"]) > [data-testid="stColumn"]:last-child,
+    [data-testid="stHorizontalBlock"]:has([data-testid="stFileUploader"]) > [data-testid="column"]:last-child {
+        justify-content: flex-end !important;
+    }
+    /* Strip every uploader wrapper (works for <div> or <section>) */
+    [data-testid="stHorizontalBlock"]:has([data-testid="stFileUploader"]) [data-testid="stFileUploader"],
+    [data-testid="stHorizontalBlock"]:has([data-testid="stFileUploader"]) [data-testid="stFileUploader"] > div,
+    [data-testid="stHorizontalBlock"]:has([data-testid="stFileUploader"]) [data-testid="stFileUploaderDropzone"] {
+        padding: 0 !important;
+        margin: 0 !important;
+        min-height: 0 !important;
+        background: transparent !important;
+        border: none !important;
+    }
+    /* Hide the dropzone's instructional text + label so only the button shows */
+    [data-testid="stHorizontalBlock"]:has([data-testid="stFileUploader"]) [data-testid="stFileUploaderDropzoneInstructions"],
+    [data-testid="stHorizontalBlock"]:has([data-testid="stFileUploader"]) [data-testid="stFileUploader"] small,
+    [data-testid="stHorizontalBlock"]:has([data-testid="stFileUploader"]) [data-testid="stFileUploader"] > label {
+        display: none !important;
+    }
+    /* Both buttons — identical box model so they line up vertically */
+    [data-testid="stHorizontalBlock"]:has([data-testid="stFileUploader"]) [data-testid="stFileUploaderDropzone"] button,
+    [data-testid="stHorizontalBlock"]:has([data-testid="stFileUploader"]) .stButton > button,
+    [data-testid="stHorizontalBlock"]:has([data-testid="stFileUploader"]) button[kind="primary"] {
+        height: 36px !important;
+        min-height: 36px !important;
+        padding: 0 16px !important;
+        margin: 0 !important;
+        border-radius: 10px !important;
+        font-size: 0.85rem !important;
+        font-weight: 500 !important;
+        line-height: 1 !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        box-sizing: border-box !important;
+        box-shadow: none !important;
+        transform: none !important;
+    }
+    /* Browse button — secondary neutral look */
+    [data-testid="stHorizontalBlock"]:has([data-testid="stFileUploader"]) [data-testid="stFileUploaderDropzone"] button {
+        background: rgba(255,255,255,0.06) !important;
+        border: 1px solid rgba(255,255,255,0.14) !important;
+        color: #d4d4d4 !important;
+    }
+    [data-testid="stHorizontalBlock"]:has([data-testid="stFileUploader"]) [data-testid="stFileUploaderDropzone"] button:hover {
+        background: rgba(255,255,255,0.12) !important;
+        border-color: rgba(255,255,255,0.22) !important;
+        color: #ffffff !important;
+        transform: none !important;
+    }
+    /* Send button — keep blue gradient but with the unified 36px geometry */
+    [data-testid="stHorizontalBlock"]:has([data-testid="stFileUploader"]) button[kind="primary"] {
+        background: linear-gradient(135deg, #1e88e4, #0d47a1) !important;
+        border: 1px solid #1976d2 !important;
+        color: #ffffff !important;
+    }
+    [data-testid="stHorizontalBlock"]:has([data-testid="stFileUploader"]) button[kind="primary"]:hover {
+        background: linear-gradient(135deg, #47a3f3, #1565c0) !important;
+        box-shadow: 0 6px 14px -6px rgba(30,136,228,0.5) !important;
+        transform: none !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
-# -- Top navigation --
-col_nav1, col_nav2, col_nav3 = st.columns(3)
-with col_nav1:
-    if st.button("Home", use_container_width=True):
-        st.switch_page("Home.py")
-with col_nav2:
-    if st.button("AI 3D Generation", use_container_width=True, type="primary"):
+# -- Top navigation (matches Home) --
+nav_brand, _nav_gap, nav_a, nav_b, nav_c = st.columns([0.40, 0.04, 0.18, 0.18, 0.20])
+with nav_brand:
+    st.markdown(
+        '<a href="/" target="_self" class="nav-brand">3D Print<span class="accent">.AI</span></a>',
+        unsafe_allow_html=True,
+    )
+with nav_a:
+    if st.button("Start Generating", type="primary", use_container_width=True, key="header_gen"):
         st.switch_page("pages/1_AI_3D_Generation.py")
-with col_nav3:
-    if st.button("Print With Us", use_container_width=True):
+with nav_b:
+    if st.button("Get a Quote", use_container_width=True, key="header_quote"):
         st.switch_page("pages/2_Print_With_Us.py")
+with nav_c:
+    if st.button("Pricing", use_container_width=True, key="header_pricing"):
+        st.switch_page("pages/3_Pricing.py")
+st.markdown('<div style="border-bottom:1px solid #1f1f1f; margin: 0.25rem 0 0.5rem 0;"></div>', unsafe_allow_html=True)
 
-st.markdown("<hr>", unsafe_allow_html=True)
-
-# -- Top toolbar: AI Model selector + Dev Mode toggle, stacked on the right --
+# -- Top toolbar: page title on the left, AI Model selector + Dev Mode toggle on the right --
 toolbar_left, toolbar_right = st.columns([5, 1])
+with toolbar_left:
+    st.markdown(
+        '<h1 style="font-size:clamp(1.6rem,3vw,2.2rem); font-weight:800; '
+        'color:#ffffff; letter-spacing:-0.02em; margin:0.5rem 0 0 0;">'
+        '3D Model Generation</h1>',
+        unsafe_allow_html=True,
+    )
 with toolbar_right:
     ai_provider = st.selectbox(
         "AI Model",
